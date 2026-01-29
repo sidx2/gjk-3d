@@ -202,3 +202,31 @@ export function orientZAxisGizmo(
     );
 }
 
+
+export function saveFrame(pixels: Uint8Array, w: number, h: number, frame: number) {
+    const canvas2d = document.createElement("canvas");
+    canvas2d.width = w;
+    canvas2d.height = h;
+    const ctx = canvas2d.getContext("2d")!;
+
+    const img = ctx.createImageData(w, h);
+
+    // Flip Y
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const src = ((h - y - 1) * w + x) * 4;
+            const dst = (y * w + x) * 4;
+            img.data.set(pixels.subarray(src, src + 4), dst);
+        }
+    }
+
+    ctx.putImageData(img, 0, 0);
+
+    canvas2d.toBlob(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob!);
+        a.download = `frame_${frame.toString().padStart(5, "0")}.png`;
+        a.click();
+    });
+}
+

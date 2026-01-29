@@ -425,11 +425,13 @@ class Renderer {
                 if (isEntityColliding === true) {
                     this.drawMesh(entity, vec3.fromValues(1.00, 0.35, 0.10));
                 }
-                else if (entity == editor.selectedEntity) {
-                    this.drawMesh(entity, vec3.fromValues(1.00, 0.90, 0.25));
+                // else if (entity == editor.selectedEntity) {
+                //     this.drawMesh(entity, vec3.fromValues(1.00, 0.90, 0.25));
                    
-                } else {
+                // } 
+                else {
                     this.drawMesh(entity, entity.material.color);
+                    // this.drawLines(entity, vec3.fromValues(0x00, 0xE6, 0x76));
                 }
             }
         }
@@ -480,6 +482,14 @@ class Renderer {
 
             // }                
         }
+    }
+
+    drawLines(entity: Entity, color: vec3 = vec3.fromValues(1,0,0)) {
+        const uColour = this.gl.getUniformLocation(this.program, "uColour");
+
+        this.gl.uniform3f(uColour, color[0], color[1], color[2]);
+
+        gl.drawArrays(gl.LINE_LOOP, 0, entity.mesh.verticesCount);
     }
 
     createMesh(geometry: Geometry, drawType: GLenum = this.gl.STATIC_DRAW): Mesh {
@@ -534,8 +544,8 @@ class Renderer {
 }
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-canvas.width = 16 * 80;
-canvas.height = 9 * 80;
+canvas.width = window.innerWidth;
+canvas.height = window.innerWidth * 9 / 16;
 const gl = canvas.getContext('webgl2');
 if (!gl) throw "No webgl2";
 
@@ -550,8 +560,8 @@ const render = new Renderer(gl);
 const ecoSphereMesh = render.createMesh(ecoSphereGeometry);
 const cubeMesh = render.createMesh(cubeGeometry);
 
-const ecoSphereEntity = new Entity(ecoSphereMesh, new Transform(), new Material(vec3.fromValues(0.40, 0.75, 0.95)));
-const cubeEntity = new Entity(cubeMesh, new Transform(), new Material(vec3.fromValues(0.40, 0.75, 0.95)));
+const ecoSphereEntity = new Entity(ecoSphereMesh, new Transform(), new Material(vec3.fromValues(0.255, 230/255, 118/255)));
+const cubeEntity = new Entity(cubeMesh, new Transform(), new Material(vec3.fromValues(0.255, 230/255, 118/255)));
 
 ecoSphereEntity.id = 69;
 cubeEntity.id = 420;
@@ -602,3 +612,34 @@ canvas.addEventListener("mousedown", (e) => {
 canvas.addEventListener("mouseup", (e) => {
     input.mouseDown = false;
 });
+
+function resizeCanvas() {
+    const aspect = 16 / 9;
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+
+    let canvasW = winW;
+    let canvasH = winW / aspect;
+
+    // If height overflows, fit by height instead
+    if (canvasH > winH) {
+        canvasH = winH;
+        canvasW = winH * aspect;
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.style.width = canvasW + "px";
+    canvas.style.height = canvasH + "px";
+
+    canvas.width = canvasW * dpr;
+    canvas.height = canvasH * dpr;
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+
+}
+
+
+resizeCanvas();
+// window.addEventListener("resize", resizeCanvas);
