@@ -3,6 +3,7 @@ import { parseObj } from "./parser"
 import { cubeObj, ecoSphereObj } from "./data"
 import { vertexShaderSource, fragmentShaderSource } from "./Shaders";
 import { screenPointToRay, rayTriangleIntersection, makeGizmo, transformVertices, orientZAxisGizmo, transformRay } from "./utils"
+import { gjk3d } from "./gjk";
 
 class Input {
     mousePos: vec2;
@@ -147,26 +148,42 @@ class Scene {
     }
 }
 
-class Selection {
-    entity: Entity | null = null;
+type Collision = {
+    a: Entity;
+    b: Entity;
+    normal?: vec3;
+    penetration?: number;
 }
 
-class GizmoArm {
-    mesh: Mesh;
-    transform: Transform;
-    axis: "x" | "y" | "z";
+class CollisionSystem {
+    collisions: Collision[] = [];
 
-    constructor(
-        mesh: Mesh,
-        transform: Transform,
-        axis: "x" | "y" | "z",
-    ) {
-        this.mesh = mesh;
-        this.transform = transform;
-        this.axis = axis;
+    constructor() {
+    }
+
+    update(entities: Entity[]) {
+        this.collisions.length = 0;
+
+        for (let i = 0; i < entities.length; i++) {
+            for (let j = i + 1; j < entities.length; j++) {
+                const entity1 = entities[i];
+                const entity2 = entities[j];
+                const a = transformVertices(Array.from(entity1.geometry.positions), entity1.transform.getMatrix())
+                const b = transformVertices(Array.from(entity2.geometry.positions), entity2.transform.getMatrix())
+
+                if (gjk3d(a, b)) {
+                    this.collisions.push({
+                        a: entity1, b: entity2, 
+                    });
+                }
+            }
+        }
     }
 }
 
+class Selection {
+    entity: Entity | null = null;
+}
 
 class TransformGizmo {
     mode: "translate" = "translate";
@@ -318,9 +335,6 @@ class Editor {
         }
 
         this.gizmo.active = this.selectedEntity !== null;
-
-        console.log("hitArm ", hitArm);
-
     }
 
     _createGizmoScene(): Scene {
@@ -328,11 +342,11 @@ class Editor {
         const gizmoGeometry = new Geometry(gizmoData.vertices);
         const gizmoMesh = render.createMesh(gizmoGeometry);
 
-        const gizmoYArmEntity = new Entity(gizmoMesh, new Transform(), new Material(vec3.fromValues(1, 0, 0)));
+        const gizmoYArmEntity = new Entity(gizmoMesh, new Transform(), new Material(vec3.fromValues(0.95, 0.25, 0.25)));
         const gizmoXArmEntity = gizmoYArmEntity.clone();
-        vec3.set(gizmoXArmEntity.material.color, 0, 1, 0);
+        vec3.set(gizmoXArmEntity.material.color, 0.25, 0.95, 0.35);
         const gizmoZArmEntity = gizmoYArmEntity.clone();
-        vec3.set(gizmoZArmEntity.material.color, 0, 0, 1);
+        vec3.set(gizmoZArmEntity.material.color, 0.35, 0.45, 0.95);
 
         this.gizmoZArmEntity = gizmoZArmEntity;
 
@@ -393,11 +407,15 @@ class Renderer {
         this.gl.useProgram(this.program);
     }
 
-    render(scene: Scene, camera: Camera, editor: Editor) {
+    render(scene: Scene, camera: Camera, editor: Editor, collisionSystem?: CollisionSystem) {
         for (const entity of scene.entities) {
+            const isEntityColliding = collisionSystem?.collisions.some(e => (e.a === entity || e.b === entity));
             if (entity.mesh) {
-                if (entity == editor.selectedEntity) {
-                    this.drawMesh(entity, vec3.fromValues(100/255, 100/255, 100/255));
+                if (isEntityColliding === true) {
+                    this.drawMesh(entity, vec3.fromValues(1.00, 0.35, 0.10));
+                }
+                else if (entity == editor.selectedEntity) {
+                    this.drawMesh(entity, vec3.fromValues(1.00, 0.90, 0.25));
                    
                 } else {
                     this.drawMesh(entity, entity.material.color);
@@ -518,8 +536,8 @@ const render = new Renderer(gl);
 const ecoSphereMesh = render.createMesh(ecoSphereGeometry);
 const cubeMesh = render.createMesh(cubeGeometry);
 
-const ecoSphereEntity = new Entity(ecoSphereMesh, new Transform(), new Material(vec3.fromValues(0/255, 230/255, 118/255)));
-const cubeEntity = new Entity(cubeMesh, new Transform(), new Material(vec3.fromValues(0/255, 230/255, 118/255)));
+const ecoSphereEntity = new Entity(ecoSphereMesh, new Transform(), new Material(vec3.fromValues(0.40, 0.75, 0.95)));
+const cubeEntity = new Entity(cubeMesh, new Transform(), new Material(vec3.fromValues(0.40, 0.75, 0.95)));
 
 ecoSphereEntity.id = 69;
 cubeEntity.id = 420;
@@ -536,6 +554,7 @@ const camera = mat4.perspective(mat4.create(), 100 / 180 * Math.PI, 16 / 9, 1e-3
 
 const input = new Input();
 const editor = new Editor(scene);
+const collisionSystem = new CollisionSystem();
 
 const loop = () => {
     quat.rotateY(ecoSphereEntity.transform.rotation, ecoSphereEntity.transform.rotation, 0.01);
@@ -543,7 +562,9 @@ const loop = () => {
 
     editor.update(input, camera);
 
-    render.render(scene, camera, editor);
+    collisionSystem.update(scene.entities);
+
+    render.render(scene, camera, editor, collisionSystem);
 
     window.requestAnimationFrame(loop);
 }
@@ -552,7 +573,6 @@ loop();
 
 
 canvas.addEventListener("mousemove", (e) => {
-    // console.log("e: ', ", e.offsetX, e.offsetY);
     const { offsetX, offsetY, movementX, movementY } = e;
     vec2.set(input.mousePos, offsetX, offsetY);
     vec2.set(input.mouseDelta, movementX, movementY);
