@@ -5,6 +5,10 @@ import { parseObj } from "./parser";
 import { gjk3d } from "./gjk";
 import { transformVertices } from "./utils"
 
+import "./QuasiECS";
+
+
+/*
 const fps = document.getElementById("fps") as HTMLDivElement;
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
@@ -35,7 +39,7 @@ const ecoSphereMeshHandle = renderer.addRaw(ecoSphereGPUObj);
 const cubeMeshHandle = renderer.addRaw(cubeGPUObj);
 
 let angle = 0.05;
-let samples = [];
+let samples: any[] = [];
 const MAX = 60;
 
 let prev = performance.now();
@@ -73,22 +77,22 @@ const loop = () => {
     window.requestAnimationFrame(loop);
 }
 
-const keys: any = {}
+const inputs: any = {}
 
 const handleInputs = (dt: number) => {
-    if (keys['w']) {
+    if (inputs['w']) {
         mat4.translate(persp, persp, vec3.fromValues(0, 0, 5 * dt));
     }
 
-    if (keys['s']) {
+    if (inputs['s']) {
         mat4.translate(persp, persp, vec3.fromValues(0, 0, -5 * dt));
     }
 
-    if (keys['a']) {
+    if (inputs['a']) {
         mat4.translate(model, model, vec3.fromValues(-5 * dt, 0, 0));
     }
 
-    if (keys['d']) {
+    if (inputs['d']) {
         mat4.translate(model, model, vec3.fromValues(5 * dt, 0, 0));
     }
 }
@@ -96,9 +100,10 @@ const handleInputs = (dt: number) => {
 loop();
 
 window.addEventListener('keydown', (e) => {
-    keys[e.key] = true;
+    inputs[e.key] = true;
 })
 
 window.addEventListener('keyup', (e) => {
-    keys[e.key] = undefined;
+    inputs[e.key] = undefined;
 })
+*/
