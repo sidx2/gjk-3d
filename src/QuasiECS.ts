@@ -378,12 +378,22 @@ class Renderer {
         this._initializeProgram();
 
         gl.enable(gl.DEPTH_TEST);
-        gl.enable(gl.BLEND);
-        gl.depthMask(false);
+        // gl.enable(gl.BLEND);
+        // gl.depthMask(false);
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.BACK);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    private depth(d: boolean) {
+        if (d) {
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthMask(true); 
+        } else {
+            gl.disable(gl.DEPTH_TEST);
+            gl.depthMask(false);
+        }
     }
 
     private _initializeProgram() {
@@ -408,6 +418,7 @@ class Renderer {
     }
 
     render(scene: Scene, camera: Camera, editor: Editor, collisionSystem?: CollisionSystem) {
+        this.depth(true);
         for (const entity of scene.entities) {
             const isEntityColliding = collisionSystem?.collisions.some(e => (e.a === entity || e.b === entity));
             if (entity.mesh) {
@@ -423,6 +434,7 @@ class Renderer {
             }
         }
 
+        this.depth(false);
         if (editor.gizmo.active) {
             for (const entity of editor.gizmoScene.entities) {
                 if (entity.mesh) {
@@ -430,6 +442,8 @@ class Renderer {
                 }
             }
         }
+
+        this.depth(true);
     }
 
     drawMesh(entity: Entity, color: vec3) {

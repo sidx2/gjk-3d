@@ -32,12 +32,12 @@ in vec3 oColour;
 
 void main() {
     float d = dot(normalize(vNormal), normalize(vec3(0,0,-1)));
-    float alpha = clamp(d/-1.0, 0.0, 1.0);
+    float t = clamp(d/-1.0, 0.0, 1.0);
 
-    float t = alpha;
     float start = 0.5;
     float end = 1.0;
-    outColor = vec4(oColour, mix(0.5, 1.0, alpha));
+    float intensity = mix(0.5, 1.0, t);
+    outColor = vec4(oColour * intensity, 1.0);
 }
 
 `
